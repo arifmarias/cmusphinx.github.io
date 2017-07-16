@@ -11,147 +11,130 @@ title: Training Acoustic Model
 ## Introduction
 
 CMUSphinx project comes with several high-quality acoustic models. There
-are US  English acoustic models for microphone and broadcast speech as
-well as a model for speech over a  telephone. You can also use French or
+are US English acoustic models for microphone and broadcast speech as
+well as a model for speech over a telephone. You can also use French or
 Chinese models trained on a huge amount of acoustic data. Those models
-were carefully  optimized to achieve best recognition performance and
-work well for almost all applications. We  spent years of our experience
-to make them perfect. Most command-and-control apps could use  them
-directly  as well as large vocabulary applications. 
+were carefully optimized to achieve best recognition performance and
+work well for almost all applications. We spent years of our experience
+to make them perfect. Most command-and-control applications and even
+some large vocabulary applications could just use default models
+directly. 
 
 Besides models, CMUSphinx provides ways for adaptation which is
-sufficient for  most cases when more accuracy is required. Adaptation is
-known to work well when you are using  different recording environments 
+sufficient for most cases when more accuracy is required. Adaptation is
+known to work well when you are using different recording environments 
 (close-distance or far microphone or telephone channel), or when a
-slightly  different accent is present (UK English or even Indian
-English) or even another language. Adaptation, for example, works well 
-if you need to quickly add support for some new language just by mapping
+slightly different accent is present (UK English or even Indian English)
+or even another language. Adaptation, for example, works well  if you
+need to quickly add support for some new language just by mapping
 acoustic model phoneset to  target phoneset with the dictionary.
 
 There are, however, applications where the current models won't work.
-For  example, handwriting recognition or dictation support for another
-language. In these cases, you will need to  train your own model and
-this tutorial will show you how to do that for the  CMUSphinx speech
-recognition engine. Before starting with  training make sure you are
-familar with concepts, prepared the language model  and you indeed  need
+For example, handwriting recognition or dictation support for another
+language. In these cases, you will need to train your own model and this
+tutorial demonstrates how to do the training for the CMUSphinx speech
+recognition engine. Before starting with the training make sure you are
+familar with concepts, prepared the language model and you indeed need
 to train the model and have resources to do that.
 
 ### When you need to train
 
-
-*  You want to create an acoustic model for new language/dialect
-
-*  OR you need specialized model for small vocabulary application
-
-*  **AND you have plenty of data to train on**:
-     * 1 hour of recording for command and control for single speaker
-     * 5 hour of recordings of 200 speakers for command and control for many 
-speakers
-     * 10 hours of recordings for single speaker dictation
-     * 50 hours of recordings of 200 speakers for many speakers dictation
-
-*  AND you have knowledge on phonetic structure of the language
-
-*  AND you have time to train the model and optimize parameters (1 month)
+  * You want to create an acoustic model for new language/dialect
+  * OR you need specialized model for small vocabulary application
+  * *AND you have plenty of data to train on*:
+    * 1 hour of recording for command and control for single speaker
+    * 5 hour of recordings of 200 speakers for command and control for many speakers
+    * 10 hours of recordings for single speaker dictation
+    * 50 hours of recordings of 200 speakers for many speakers dictation
+  * AND you have knowledge on phonetic structure of the language
+  * AND you have time to train the model and optimize parameters (1 month)
 
 ### When you don't need to train
 
+  * You need to improve accuracy - do acoustic model adaptation instead
+  * You do not have enough data - do acoustic model adaptation instead
+  * You do not have enough time 
+  * You do not have enough experience
 
-*  You need to improve accuracy - do acoustic model adaptation instead
-
-*  You don't have enough data - do acoustic model adaptation instead
-
-*  You don't have enough time
-
-*  You don't have enough experience
-
-Please note that the amounts of data listed here **are required** to train 
-model. If you have significantly less data than listed you can not expect to 
-train a good model. For example, you **can not** train a model with 1 minute of 
-speech data.
+Please note that the amounts of data listed here *are required* to train 
+model. If you have significantly less data than listed you can not
+expect to  train a good model. For example, you *can not* train a model
+with 1 minute of speech data.
 
 ## Data preparation
 
-The trainer learns the parameters of the models of the sound units using a set 
-of sample speech signals.
-This is called a training database. A choice of already trained databases will 
-also be provided to you. 
+The trainer learns the parameters of the models of the sound units using
+a set of sample speech signals. This is called a training database. A
+choice of already trained databases will  also be provided to you. 
 
-The database contains information required to extract statistics from the 
-speech in form of the acoustic model.
+The database contains information required to extract statistics from
+the speech in form of the acoustic model.
 
 The trainer needs to be told which sound units you want it to learn the 
-parameters of, 
-and at least the sequence in which they occur in every speech signal in your 
-training database. 
-This information is provided to the trainer through a file called the 
-*transcript file*, 
-in which the sequence of words and non-speech sounds are written exactly as 
-they occurred in a speech signal, followed by a tag which can be used to 
-associate this sequence with 
-the corresponding speech signal. 
+parameters of, and at least the sequence in which they occur in every
+speech signal in your  training database. This information is provided
+to the trainer through a file called the *transcript file*, in which
+the sequence of words and non-speech sounds are written exactly as they
+occurred in a speech signal, followed by a tag which can be used to 
+associate this sequence with the corresponding speech signal. 
 
-The trainer then looks into a *dictionary* which maps 
-every word to a sequence of sound units, to derive the sequence of sound units 
-associated 
-with each signal. 
+Thus, in addition to the speech signals, and transcription file the
+trainer needs to access two dictionaries, one in which legitimate words
+in the language are mapped sequences of sound units (or sub-word units),
+and another in which non-speech sounds are mapped to corresponding
+non-speech  or speech-like  sound units. We will refer to the former as
+the language *phonetic dictionary* and the latter as the *filler
+dictionary*. The trainer then looks into dictionaries, to derive the
+sequence of sound units associated with each signal and transcription.
 
-Thus, in addition to the speech signals, you will also be given a set of
-*transcripts* for the database (in a single file) and two dictionaries, one in 
-which 
-legitimate words in the language are mapped sequences of sound units (or 
-sub-word units), 
-and another in which non-speech sounds are mapped to corresponding non-speech 
-or speech-like 
-sound units. We will refer to the former as the language *dictionary* and the 
-latter as the *filler dictionary*. 
 
-After training, it's mandatory to run the decoder to check training results. 
-The Decoder takes a
-model, tests part of the database and reference transcriptions and estimates 
-the quality (WER)
-of the model. During the testing stage we use the *language model* with the 
-description of the order of words in the language.
+After training, it's mandatory to run the decoder to check training
+results. The Decoder takes a model, tests part of the database and
+reference transcriptions and estimates  the quality (WER) of the model.
+During the testing stage we use the *language model* with the
+description of the possible order of words in the language.
 
-First of all, you need to design a database for training or download an 
-existing one. For example, you can purchase a
-database from LDC. You'll have to convert it to a proper format.
+To setup a training, first of all, you need to design a database for
+training or download an existing one. For example, you can purchase a
+database from [LDC](https://www.ldc.upenn.edu). You'll have to convert
+it to a proper format.
 
-A database should be a good representation of what speech you are going to 
-recognize. For example if you are going to recognize telephone speech its 
-preferred to use telephone recordings. If you want mobile speech, you should 
-better find mobile recordings. Speech is significantly different across various 
-recording channels. Broadcast news is different from telephone. Speech decoded 
-from mp3 is significantly different from the microphone recording. However, if 
-you do not have enough speech recorded in required condition you should 
-definitely use other speech you have. For example you can use broadcast 
-recordings. Sometimes it make sense to stream through the telephone codec to 
-make audio similar. It's often possible to add noise to training data too.
+A database should be a good representation of what speech you are going
+to  recognize. For example if you are going to recognize telephone
+speech its  preferred to use telephone recordings. If you want mobile
+speech, you should  better find mobile recordings. Speech is
+significantly different across various  recording channels. Broadcast
+news is different from telephone. Speech decoded  from mp3 is
+significantly different from the microphone recording. However, if  you
+do not have enough speech recorded in required condition you should 
+definitely use the other speech you have. For example you can use
+broadcast recordings. Sometimes it make sense to stream through the
+telephone codec to make audio similar. It's often possible to add noise
+to training data too.
 
 Database should have enough speakers recording, variety of recording 
-conditions, enough acoustic variations and all possible linguistic sentences. 
-The size of the database depends on the complexity of the task you want to 
-handle as mentioned above. A Database should have the two parts mentioned above 
-- training part and test part. Usually test part is about 1/10th of the full 
-data size, but we don't recommend you to have test data more than 4 hours of 
+conditions, enough acoustic variations and all possible linguistic
+sentences. The size of the database depends on the complexity of the
+task you want to handle as mentioned above. 
+
+A database should have the two parts mentioned above - training part and
+test part. Usually test part is about 1/10th of the full  data size, but
+we don't recommend you to have test data more than 4 hours of 
 recordings.
 
 The good ways to obtain a database for a new language are:
 
 
-*  Manually segment audio recordings with existing transcription (podcasts, 
-news, etc)
+  * Manually segment audio recordings with existing transcription (podcasts, news, etc)
+  * Record your friends and family and colleagues
+  * Setup automated collection on [Voxforge](http://voxforge.org)
 
-*  Record your friends and family and colleagues
-
-*  Setup automated collection on Voxforge
-
-You have to design database prompts and postprocess the results to ensure that 
-audio actually corresponds
-to prompts. The file structure for the database is:
+You have to design database prompts and postprocess the results to
+ensure that audio actually corresponds to prompts. The file structure
+for the database is:
 
 
-*  etc
+  * etc
     * your_db.dic - *Phonetic dictionary*
     * your_db.phone - *Phoneset file*
     * your_db.lm.DMP - *Language model*
@@ -160,183 +143,184 @@ to prompts. The file structure for the database is:
     * your_db_train.transcription - *Transcription for training*
     * your_db_test.fileids - *List of files for testing*
     * your_db_test.transcription - *Transcription for testing*
-
-*  wav
+  *  wav
     * speaker_1
       * file_1.wav - *Recording of speech utterance*
     * speaker_2
-      *  file_2.wav
+      * file_2.wav
 
 Let's go through the files and describe their format and the way to prepare 
 them:
 
-*Fileids (your_db_train.fileids and your_db_test.fileids) * file is a text file 
-listing the names of the recordings (utterance ids) one by line, for example
+*Fileids (your_db_train.fileids and your_db_test.fileids)* file is a
+text file  listing the names of the recordings (utterance ids) one by
+line, for example
 
-	
-	   speaker_1/file_1
-	   speaker_2/file_2
+```	
+speaker_1/file_1
+speaker_2/file_2
+```
 
+Fileids file contains the path in a filesystem relative to wav
+directory. Note  that fileids file should have no extensions for audio
+files, just the names.
 
-Fileids file contains the path in a filesystem relative to wav directory. Note 
-that fileids file should have no extensions for audio files, just the names.
-
-*Transcription file (your_db_train.transcription and 
-your_db_test.transcription) * is a text file listing the transcription for each 
-audio file
+*Transcription file (your_db_train.transcription and
+your_db_test.transcription)* is a text file listing the transcription
+for each audio file
    
+```
+<s> hello world </s> (file_1)
+<s> foo bar </s> (file_2)
+```
 
-	
-	   `<s>` hello world `</s>` (file_1)
-	   `<s>` foo bar `</s>` (file_2)
+It's important that each line starts with `<s>` and ends with `</s>`
+followed  by id in parentheses. Also note that parenthesis contains only
+the file,  without speaker_n directory. It's critical to have exact
+match between fileids  file and the transcription file. The number of
+lines in both should be  identical. Last part of the file id
+`(speaker1/file_1)` and the utterance id `file_1` must be the same on
+each line.
 
-
-It's important that each line starts with `<s>` and ends with `</s>` followed 
-by id in parentheses. Also note that parenthesis contains only the file, 
-without speaker_n directory. It's critical to have exact match between fileids 
-file and the transcription file. The number of lines in both should be 
-identical. Last part of the file id `(speaker1/**file_1**)` and the utterance 
-id `file_1` must be the same on each line.
-
-Below is an example of **incorrect** fileids file for the above transcription 
+Below is an example of *incorrect* fileids file for the above transcription 
 file. If you follow it, you will get an error as discussed 
 [here](https://sourceforge.net/p/cmusphinx/discussion/help/thread/278ee211/)
 
-	
-	   speaker_2/file_2
-	   speaker_1/file_1
-	   //Error! Do not create fileids file like this!
+```
+speaker_2/file_2
+speaker_1/file_1
+//Bad! Do not create fileids file like this!
+```
 
+*Speech recordings (wav files)* 
 
+Audio recordings should contain training audio and that training audio
+should  match the audio you want to recognize. In case of mismatch there
+could be drop  of the accuracy, sometimes significant. For example, if
+you want to recognize  continuous speech your training database should
+record continuous speech. For  continuous speech audio files shouldn't
+be very long and shouldn't be very  short. Optimal length is not less
+than 5 seconds and not more than 30 seconds.  Very long files make
+training much harder. If you are going to recognize short  isolated
+commands, your training database should contain the files with short 
+isolated commands. It is better to design database to recognize
+continuous  speech from the beginning though and not spend your time on
+commands. In the end you speak continuously anyway. Amount of silence in
+the beginning of the utterance and in the end of the utterance should
+not exceed 0.2 second.
 
-*Speech recordings (wav files) * 
+Recording files must be in MS WAV format with specific sample rate - 16
+kHz, 16  bit, mono for desktop application, 8kHz, 16bit, mono for
+telephone  applications.  It's *critical* to have audio files in a
+specific format.  sphinxtrain does support some variety of sample rates
+but by default it's  configured to train from *16khz 16bit mono* files
+in MS WAV format. *YOU NEED TO MAKE SURE THAT YOU RECORDINGS ARE AT A
+SAMPLING RATE OF 16 KHZ (or 8 kHz if you train a telephone model) IN
+MONO WITH SINGLE CHANNEL.*
 
-Audio recordings should contain training audio and that training audio should 
-match the audio you want to recognize. In case of mismatch there could be drop 
-of the accuracy, sometimes significant. For example, if you want to recognize 
-continuous speech your training database should record continuous speech. For 
-continuous speech audio files shouldn't be very long and shouldn't be very 
-short. Optimal length is not less than 5 seconds and not more than 30 seconds. 
-Very long files make training much harder. If you are going to recognize short 
-isolated commands, your training database should contain the files with short 
-isolated commands. It is better to design database to recognize continuous 
-speech from the beginning though and not spend your time on commands. In the 
-end you speak continuously anyway. Amount of silence in the beginning of the 
-utterance and in the end of the utterance should not exceed 0.2 second.
-
-Recording files must be in MS WAV format with specific sample rate - 16 kHz, 16 
-bit, mono for desktop application, 8kHz, 16bit, mono for telephone 
-applications.  It's **critical** to have audio files in a specific format. 
-sphinxtrain does support some variety of sample rates but by default it's 
-configured to train from **16khz 16bit mono** files in MS WAV format. **YOU 
-NEED TO MAKE SURE THAT YOU RECORDINGS ARE AT A SAMPLING RATE OF 16 KHZ (or 8 
-kHz if you train a telephone model) IN MONO WITH SINGLE CHANNEL.**
-
-If you train from 8khz model you need to make sure you configured feature 
-extraction properly. Please note that you **CAN NOT UPSAMPLE** your audio, that 
-means you can not train 16 khz model with 8khz data. 
+If you train from 8khz model you need to make sure you configured
+feature  extraction properly. Please note that you *CAN NOT UPSAMPLE*
+your audio, that means you can not train 16 khz model with 8khz data. 
 
 Audio format mismatch is the most common training problem.
 
-*Phonetic Dictionary (your_db.dict) * should have one line per word with word 
-following the phonetic transcription
+*Phonetic Dictionary (your_db.dict)* should have one line per word with
+word following the phonetic transcription
    
 
-	
-	HELLO HH AH L OW
-	WORLD W AO R L D
+```	
+HELLO HH AH L OW
+WORLD W AO R L D
+```
 
 
-If you need to find phonetic dictionary, read Wikipedia or a book on phonetics. 
-If you are using existing 
-phonetic dictionary. Do not use case-sensitive variants like "e" and "E". 
-Instead, all your phones must be different even in case-insensitive variation. 
-Sphinxtrain doesn't support some special characters like '*' or '/' and 
-supports most of others like "+" or "-" or ":" But to be safe we recommend you 
-to use alphanumeric-only phone-set. 
+If you need to find phonetic dictionary, read Wikipedia or a book on
+phonetics.  If you are using existing  phonetic dictionary. Do not use
+case-sensitive variants like "e" and "E". Instead, all your phones must
+be different even in case-insensitive variation.  Sphinxtrain doesn't
+support some special characters like '*' or '/' and supports most of
+others like "+" or "-" or ":" But to be safe we recommend you to use
+alphanumeric-only phone-set.
 
-Replace special characters in the phone-set, like colons or dashes or tildes, 
-with something alphanumeric. For example, replace "a~" with "aa" to make it 
-alphanumeric only. Nowadays, even cell phones have gigabytes of memory on 
-board. There is no sense in trying to save space with cryptic special 
-characters.
+Replace special characters in the phone-set, like colons or dashes or
+tildes,  with something alphanumeric. For example, replace "a~" with
+"aa" to make it alphanumeric only. Nowadays, even cell phones have
+gigabytes of memory on board. There is no sense in trying to save space
+with cryptic special characters.
 
 There is one very important thing here. For a large vocabulary database, 
-phonetic representation is more or less
-known; it's simple phones described in any book. If you don't have a phonetic 
-book, you can just use the word's spelling and
-it gives very good results:
+phonetic representation is more or less known; it's simple phones
+described in any book. If you don't have a phonetic  book, you can just
+use the word's spelling and it gives very good results:
 
-	
-	ONE O N E
-	TWO T W O
+```	
+ONE O N E
+TWO T W O
+```
 
+For small vocabulary CMUSphinx is different from other toolkits. It's
+often recommended to train word-based models for small vocabulary
+databases like digits. But it only makes sense if your  HMMs could have
+variable length. 
 
-For small vocabulary CMUSphinx is different from other toolkits. It's often 
-recommended to train word-based models
-for small vocabulary databases like digits. But it only makes sense if your 
-HMMs could have variable length. 
-
-**CMUSphinx does not support word models.** Instead, you need to use a 
+*CMUSphinx does not support word models.* Instead, you need to use a 
 word-dependent phone dictionary:
 
-	
-	ONE W_ONE AH_ONE N_ONE
-	TWO T_TWO UH_TWO
-	NINE N_NINE AY_NINE N_END_NINE
+```	
+ONE W_ONE AH_ONE N_ONE
+TWO T_TWO UH_TWO
+NINE N_NINE AY_NINE N_END_NINE
+```
 
+This is actually *equivalent* to word-based models and some times even
+gives  better accuracy. *Do not use  word-based models with CMUSphinx.*
 
-This is actually **equivalent** to word-based models and some times even gives 
-better accuracy. **Do not use 
-word-based models with CMUSphinx.**
+*Phoneset file (your_db.phone)* should have one phone per line. The
+number of  phones should match the phones used in the dictionary plus
+the special SIL phone for silence:
 
-*Phoneset file (your_db.phone) * should have one phone per line. The number of 
-phones should match the phones used in the dictionary plus the special SIL 
-phone for silence:
+```
+AH
+AX
+DH
+IX
+```
 
-	
-	AH
-	AX
-	DH
-	IX
+*Language model file (your_db.lm.DMP)* should be in ARPA format or in
+DMP format. Find our more about language models on [Language Model
+training  chapter](/wiki/tutoriallm).
 
-
-*Language model file (your_db.lm.DMP) * should be in ARPA format or in DMP 
-format. Find our more about language models on [Language Model training 
-chapter](/wiki/tutoriallm).
-
-*Filler dictionary (your_db.filler) * contains filler phones (not-covered by 
+*Filler dictionary (your_db.filler)* contains filler phones (not-covered by 
 language model non-linguistic sounds like breath, hmm or laugh). It can contain 
 just silences:
 
-	
-	`<s>` SIL
-	`</s>` SIL
-	`<sil>` SIL
-
+```	
+<s> SIL
+</s> SIL
+<sil> SIL
+```
 
 Or filler phones if they are present in the db transcriptions:
 
-	
-	+um+ ++um++
-	+noise+ ++noise++
+```
++um+ ++um++
++noise+ ++noise++
+```
+
+The sample database for training is available at [an4 database NIST's
+Sphere  audio (.sph) format](http://www.speech.cs.cmu.edu/databases/an4/an4_sphere.tar.gz), you can
+use it in following steps. If you want to play with large example,
+download TEDLIUM English acoustic database. It's about 200 hours of
+audio recordings now. 
 
 
-The sample database for training is available at [an4 database NIST's Sphere 
-audio (.sph) format 
-](http://www.speech.cs.cmu.edu/databases/an4/an4_sphere.tar.gz), you can use it 
-in following steps. If you want to play with large example, download TEDLIUM 
-English acoustic database. It's about 200 hours of audio recordings now.
 ## Compilation of the required packages
 
 The following packages are required for training:
 
-
-*  sphinxbase-5prealpha
-
-*  sphinxtrain-5prealpha
-
-*  pocketsphinx-5prealpha
+  * sphinxbase-5prealpha
+  * sphinxtrain-5prealpha
+  * pocketsphinx-5prealpha
 
 The following external packages are also required:
 
@@ -405,13 +389,13 @@ properly.
 To start the training change to the database folder and run the following 
 commands:
 
-**On Linux**
+*On Linux*
 
 	
 	sphinxtrain -t an4 setup
 
 
-**On Windows**
+*On Windows*
 
 	
 	python ../sphinxtrain/scripts/sphinxtrain -t an4 setup
@@ -514,7 +498,7 @@ This value is the number of senones to train in a model. The more senones model
 has, the more precisely it discriminates the sounds. But on the other hand if 
 you have too many senones, model will not be generic enough to recognize unseen 
 speech. That means that the WER will be higher on unseen data. That's why it is 
-**important** to not 
+*important* to not 
 overtrain the models. In case there are too many unseen senones, the warnings 
 will be generated in the norm log on stage 50 below:
 
@@ -560,7 +544,7 @@ In order to build a best database you need to try to reproduce real environment
 as much as possible. It's even better to collect more speech to try to optimize 
 the database size.
 
-It's important to remember, that optimal numbers **depends on your database**. 
+It's important to remember, that optimal numbers *depends on your database*. 
 To train model properly, you need to experiment with different values and try 
 to select the ones which give best WER for a development set. You can 
 experiment with number of senones, number of gaussian mixtures at least. 
@@ -651,13 +635,13 @@ First of all, go to the database directory:
 To train, just run the following commands:
 
 
-**On Linux**
+*On Linux*
 
 	
 	sphinxtrain run
 
 
-**On Windows**
+*On Windows*
 
 	
 	python ../sphinxtrain/scripts/sphinxtrain run
@@ -667,8 +651,8 @@ and it will go through all the required stages. It will take a few minutes to
 train. On large databases, training could take a month. 
 
 During the stages, the most important stage is the first one which checks that 
-everything is configured correctly and your input data is consistent. **Do not 
-ignore the errors reported on the first 00.verify_all step.**
+everything is configured correctly and your input data is consistent. *Do not 
+ignore the errors reported on the first 00.verify_all step.*
 
 The typical output during decoding will look like:
 
@@ -818,7 +802,7 @@ Default is `"no"`. This will run steps `60.lattice_generation`,
 details see [mmie_train](mmie_train).
 ## Testing
 
-It's **critical** to test the quality of the trained database in order to 
+It's *critical* to test the quality of the trained database in order to 
 select best parameters, 
 understand how application performs and optimize performance. To do that, a 
 test decoding step is needed. 
@@ -933,7 +917,7 @@ See [Sphinx4 tutorial](/wiki/tutorialsphinx4) for details.
 
 Troubleshooting is not rocket science. For all issues you may blame yourself. 
 You are most 
-likely the reason of failure. **Carefully** read the messages in the `logdir` 
+likely the reason of failure. *Carefully* read the messages in the `logdir` 
 folder that contains
 detailed log of actions performed for each. In addition, messages are copied to 
 the file, `your_project_name.html`, which you can read in a browser.
@@ -1011,7 +995,7 @@ database.
 ##### Can't open */*-1-1.match word_align.pl failed with error code 65280
 
 This error occurs because the decoder did not run properly after training. 
-First check if the correct executable (**psdecode_batch** if the decoding 
+First check if the correct executable (*psdecode_batch* if the decoding 
 script being used is `psdecode.pl` as set by `$DEC_CFG_SCRIPT` variable in 
 `sphinx_train.cfg`) is present in `PATH`. On Linux run 
 
